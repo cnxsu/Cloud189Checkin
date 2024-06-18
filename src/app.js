@@ -183,6 +183,34 @@ const pushPushPlusWebhook = (title, desp) => {
   });
 };
 
+const pushWxPusher = (title, desp) => {
+  if (!(wxpush.appToken && wxpush.uid)) {
+    return;
+  }
+  const data = {
+    appToken: wxpush.appToken,
+    contentType: 1,
+    summary: title,
+    content: desp,
+    uids: [wxpush.uid],
+  };
+  superagent
+    .post("https://wxpusher.zjiecode.com/api/send/message")
+    .send(data)
+    .end((err, res) => {
+      if (err) {
+        logger.error(`wxPusher推送失败:${JSON.stringify(err)}`);
+        return;
+      }
+      const json = JSON.parse(res.text);
+      if (json.data[0].code !== 1000) {
+        logger.error(`wxPusher推送失败:${JSON.stringify(json)}`);
+      } else {
+        logger.info("wxPusher推送成功");
+      }
+    });
+};
+
 const push = (title, desp) => {
   pushServerChan(title, desp);
   pushTelegramBot(title, desp);
