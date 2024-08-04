@@ -14,7 +14,7 @@ on:
         description: '工作流程的名称或文件名(如果未设置,则针对所有工作流程)'
         required: false
       delete_workflow_by_state_pattern:
-        description: '按状态过滤工作流程:活动、已删除、已禁用_分支、已禁用_不活跃、已禁用_手动'
+        description: '按状态筛选工作流：active, deleted, disabled_fork, disabled_inactivity, disabled_manually'
         required: true
         default: "ALL"
         type: choice
