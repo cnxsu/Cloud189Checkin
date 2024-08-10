@@ -1,6 +1,7 @@
 /* eslint-disable no-await-in-loop */
 const log4js = require("log4js");
 const recording = require("log4js/lib/appenders/recording");
+
 log4js.configure({
   appenders: {
     vcr: {
@@ -22,6 +23,9 @@ const telegramBot = require("./push/telegramBot");
 const wecomBot = require("./push/wecomBot");
 const wxpush = require("./push/wxPusher");
 const accounts = require("../accounts");
+const token = process.env.PUSH_PLUS_TOKEN;
+const channel = process.env.PUSHPLUSCHANNEL;
+const webhook = process.env.PUSHPLUSWEBHOOK;
 
 const mask = (s, start, end) => s.split("").fill("*", start, end).join("");
 
@@ -129,33 +133,54 @@ const pushTelegramBot = (title, desp) => {
 };
 
 const pushWecomBot = (title, desp) => {
-  if (!(wecomBot.key && wecomBot.telphone)) {
-    return;
-  }
-  const data = {
-    msgtype: "text",
-    text: {
-      content: `${title}\n\n${desp}`,
-      mentioned_mobile_list: [wecomBot.telphone],
-    },
-  };
-  superagent
-    .post(
-      `https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=${wecomBot.key}`
-    )
-    .send(data)
-    .end((err, res) => {
-      if (err) {
-        logger.error(`wecomBot推送失败:${JSON.stringify(err)}`);
-        return;
-      }
-      const json = JSON.parse(res.text);
-      if (json.errcode) {
-        logger.error(`wecomBot推送失败:${JSON.stringify(json)}`);
-      } else {
-        logger.info("wecomBot推送成功");
-      }
-    });
+  if (!(wecomBot.key && wecomBot.telphone)) { return; }
+  const data = { msgtype: "text", text: { content: title + "\n\n" + desp, mentioned_mobile_list: [wecomBot.telphone] } };
+  superagent.post(`https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=${wecomBot.key}`).send(data).end((err, res) => {
+    if (err) {
+      logger.error(`wecomBot推送失败:${JSON.stringify(err)}`);
+      return;
+    }
+    const json = JSON.parse(res.text);
+    if (json.errcode) {
+      logger.error(`wecomBot推送失败:${JSON.stringify(json)}`);
+    } else {
+      logger.info('wecomBot推送成功');
+    }
+  });
+};
+
+const pushPushPlus = (title, desp) => {
+  if (!token) { return; }
+  const data = { token: token, title: title, content: desp, template: 'txt', channel: 'wechat' };
+  superagent.post('http://www.pushplus.plus/send/').send(data).set('Content-Type', 'application/json').end((err, res) => {
+    if (err) {
+      logger.error(`PushPlus推送失败: ${JSON.stringify(err)}`);
+      return;
+    }
+    const json = res.body;
+    if (json.code !== 200) {
+      logger.error(`PushPlus推送失败: ${JSON.stringify(json)}`);
+    } else {
+      logger.info('PushPlus推送成功');
+    }
+  });
+};
+
+const pushPushPlusWebhook = (title, desp) => {
+  if (!(token && channel && webhook)) { return; }
+  const data = { token: token, title: title, content: desp, template: 'txt', channel: channel, webhook: webhook };
+  superagent.post(`http://www.pushplus.plus/send/`).send(data).set('Content-Type', 'application/json').end((err, res) => {
+    if (err) {
+      logger.error(`PushPlusWebhook推送失败: ${JSON.stringify(err)}`);
+      return;
+    }
+    const json = res.body;
+    if (json.code !== 200) {
+      logger.error(`PushPlusWebhook推送失败: ${JSON.stringify(json)}`);
+    } else {
+      logger.info('PushPlusWebhook推送成功');
+    }
+  });
 };
 
 const pushWxPusher = (title, desp) => {
@@ -191,6 +216,8 @@ const push = (title, desp) => {
   pushTelegramBot(title, desp);
   pushWecomBot(title, desp);
   pushWxPusher(title, desp);
+  pushPushPlus(title, desp);
+  pushPushPlusWebhook(title, desp);
 };
 
 // 开始执行程序
