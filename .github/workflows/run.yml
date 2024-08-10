@@ -1,37 +1,44 @@
-name: Cloud check in action
+name: Cloud189Checkin
+
 on:
   push:
     branches:
       - main
-      - dev
   watch:
     types: started
   workflow_dispatch:
   schedule:
-    - cron: 35 3 * * *
+    - cron: "0 18 * * *"
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    environment: user
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: init secrets
-        uses: shine1594/secrets-to-env-action@master
-        with:
-          secrets: ${{ toJSON(secrets) }}
-          secrets_env: production
-          prefix_prod: ""
-          file_name_prod: .env
-      - name: init
+
+      - name: Install dependencies
         run: npm install
-      - name: run
+
+      - name: Run the script with retries
         id: run
         uses: nick-fields/retry@v3
         with:
           timeout_minutes: 10
           max_attempts: 3
           command: npm start
+
+    env:
+      TY_USER_NAME: ${{ secrets.TY_USER_NAME }}
+      TY_PASSWORD: ${{ secrets.TY_PASSWORD }}
+      TY_USER_NAME1: ${{ secrets.TY_USER_NAME1 }}
+      TY_PASSWORD1: ${{ secrets.TY_PASSWORD1 }}
+      SENDKEY: ${{ secrets.SENDKEY }}
+      WX_PUSHER_APP_TOKEN: ${{ secrets.WX_PUSHER_APP_TOKEN }}
+      WX_PUSHER_UID: ${{ secrets.WX_PUSHER_UID }}
